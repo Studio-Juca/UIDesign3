@@ -1,0 +1,356 @@
+  
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>[your name] | UI Design Programming 1</title>
+  <meta charset="utf-8" />
+</head>
+
+<body>
+
+  <!-- this is where my code is-->
+  <div id="grid">
+    <div id="left-column" class="scroll">  
+
+      <!-- my favorite pokemon -->
+      <!-- <img src="https://archives.bulbagarden.net/media/upload/2/24/Spr_2c_054.png" alt="Psyduck" /> -->
+
+      <!-- about me-->
+      <h1>[Your Name Here]</h1>  
+      <p class="desc">A short paragraph about you...</p>
+      <ul>
+        <li>My favorite food is ...</li>
+        <li>My favorite song is...</li>
+        <li>My favorite website is <a href="">Craigslist</a></li>
+      </ul>
+
+    </div>
+  </div>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screensaver clock</title>
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #0d0d0d;
+      font-family: ui-monospace, monospace;
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="clock"></canvas>
+<script>
+  const canvas = document.getElementById("clock")
+  const ctx = canvas.getContext("2d")
+ 
+  const SIZE = Math.min(window.innerWidth, window.innerHeight) * 0.92
+  canvas.width = SIZE
+  canvas.height = SIZE
+ 
+  const cx = SIZE / 2
+  const cy = SIZE / 2
+ 
+  const potRim  = SIZE * 0.48
+  const soilR   = SIZE * 0.40
+  const vineR   = SIZE * 0.455
+ 
+  const LEAF_COLORS = [
+    "#a8d87a",
+    "#6db33f",
+    "#3d8c2f",
+    "#1f5e1a",
+    "#0f3d0a",
+  ]
+ 
+  const FLOWER_COLORS = [
+    "#f76ca8",
+    "#b06fe8",
+    "#ff7043",
+  ]
+ 
+  const VINE_COLORS = [
+    "#7ec850",
+    "#4aaa30",
+    "#2a6b18",
+  ]
+ 
+  // Vogel spiral with a rotation offset applied to each position
+  function soilPosition(index, count, rotationOffset) {
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5))
+    const r = soilR * 0.88 * Math.sqrt((index + 0.5) / count)
+    const a = index * goldenAngle + rotationOffset
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }
+  }
+ 
+  // Each leaf entry: { index (0-59 within its minute), rotationOffset, color }
+  // Each flower entry: { index (0-59 within its hour), rotationOffset, color }
+  const leafLog   = []
+  const flowerLog = []
+ 
+  let lastSecond = -1
+  let lastMinute = -1
+  let lastHour   = -1
+ 
+  // Rotation offset per minute/hour — golden angle steps so each batch
+  // starts at a clearly different angle
+  const ROTATION_STEP = Math.PI * (3 - Math.sqrt(5))  // ~137.5°
+ 
+  let leafMinuteCount   = 0  // how many minutes have passed (drives leaf offset)
+  let flowerHourCount   = 0  // how many hours have passed (drives flower offset)
+ 
+  function vineAngle(minutes) {
+    return -Math.PI / 2 + (minutes / 60) * Math.PI * 2
+  }
+ 
+  // ---- Draw helpers ----
+ 
+  function drawPotRim() {
+    const shadow = ctx.createRadialGradient(cx, cy, soilR * 0.95, cx, cy, potRim)
+    shadow.addColorStop(0, "#7a3a10")
+    shadow.addColorStop(0.4, "#a04d18")
+    shadow.addColorStop(1, "#5c2a08")
+    ctx.beginPath()
+    ctx.arc(cx, cy, potRim, 0, Math.PI * 2)
+    ctx.fillStyle = shadow
+    ctx.fill()
+ 
+    ctx.beginPath()
+    ctx.arc(cx, cy, potRim - SIZE * 0.005, 0, Math.PI * 2)
+    ctx.strokeStyle = "rgba(255,180,100,0.25)"
+    ctx.lineWidth = SIZE * 0.006
+    ctx.stroke()
+  }
+ 
+  function drawSoil() {
+    const g = ctx.createRadialGradient(cx - soilR * 0.2, cy - soilR * 0.2, soilR * 0.05, cx, cy, soilR)
+    g.addColorStop(0, "#4a2808")
+    g.addColorStop(0.6, "#3a1e06")
+    g.addColorStop(1, "#2a1404")
+    ctx.beginPath()
+    ctx.arc(cx, cy, soilR, 0, Math.PI * 2)
+    ctx.fillStyle = g
+    ctx.fill()
+  }
+ 
+  function drawLeaf(pos, index, color) {
+    const angle = index * 137.508 * Math.PI / 180
+    const size = SIZE * 0.058
+ 
+    ctx.save()
+    ctx.translate(pos.x, pos.y)
+    ctx.rotate(angle)
+ 
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.bezierCurveTo(-size * 0.35, -size * 0.3, -size * 0.3, -size * 0.85, 0, -size)
+    ctx.bezierCurveTo( size * 0.3, -size * 0.85,  size * 0.35, -size * 0.3, 0, 0)
+    ctx.fillStyle = color
+    ctx.fill()
+ 
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(0, -size)
+    ctx.strokeStyle = "rgba(0,60,0,0.45)"
+    ctx.lineWidth = SIZE * 0.003
+    ctx.stroke()
+ 
+    ctx.restore()
+  }
+ 
+  function drawFlower(pos, index, color) {
+    const size = SIZE * 0.046
+ 
+    ctx.save()
+    ctx.translate(pos.x, pos.y)
+ 
+    for (let p = 0; p < 5; p++) {
+      const pa = (p / 5) * Math.PI * 2
+      ctx.beginPath()
+      ctx.ellipse(
+        Math.cos(pa) * size * 0.52,
+        Math.sin(pa) * size * 0.52,
+        size * 0.38, size * 0.24, pa, 0, Math.PI * 2
+      )
+      ctx.fillStyle = color
+      ctx.fill()
+    }
+ 
+    ctx.beginPath()
+    ctx.arc(0, 0, size * 0.26, 0, Math.PI * 2)
+    ctx.fillStyle = "#f9e05a"
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(0, 0, size * 0.14, 0, Math.PI * 2)
+    ctx.fillStyle = "#e8a820"
+    ctx.fill()
+ 
+    ctx.restore()
+  }
+ 
+  function drawVineArc(fromMin, toMin, color) {
+    const steps = Math.max(20, Math.round((toMin - fromMin) * 4))
+    const span  = (toMin - fromMin) / 60 * Math.PI * 2
+ 
+    ctx.beginPath()
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps
+      const a = vineAngle(fromMin) + span * t
+      const wiggle = Math.sin(t * Math.PI * 7) * SIZE * 0.016
+      const r = vineR + wiggle
+      const px = cx + Math.cos(a) * r
+      const py = cy + Math.sin(a) * r
+      if (i === 0) ctx.moveTo(px, py)
+      else ctx.lineTo(px, py)
+    }
+    ctx.strokeStyle = color
+    ctx.lineWidth = SIZE * 0.009
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.stroke()
+ 
+    const leafCount = Math.max(1, Math.round((toMin - fromMin) / 5))
+    for (let i = 1; i <= leafCount; i++) {
+      const t = i / (leafCount + 1)
+      const a = vineAngle(fromMin) + span * t
+      const wiggle = Math.sin(t * Math.PI * 7) * SIZE * 0.016
+      const r = vineR + wiggle
+      const px = cx + Math.cos(a) * r
+      const py = cy + Math.sin(a) * r
+      const side = i % 2 === 0 ? 1 : -1
+ 
+      ctx.save()
+      ctx.translate(px, py)
+      ctx.rotate(a + side * Math.PI / 2.5)
+      const ls = SIZE * 0.022
+      ctx.beginPath()
+      ctx.ellipse(0, -ls * 0.6, ls * 0.22, ls * 0.55, 0, 0, Math.PI * 2)
+      ctx.fillStyle = color
+      ctx.fill()
+      ctx.restore()
+    }
+  }
+ 
+  function drawVines(minutes) {
+    if (minutes === 0) return
+    const tenMins = Math.floor(minutes / 10)
+    const partial = minutes % 10
+    for (let v = 0; v < tenMins; v++) {
+      drawVineArc(v * 10, (v + 1) * 10, VINE_COLORS[v % VINE_COLORS.length])
+    }
+    if (partial > 0) {
+      drawVineArc(tenMins * 10, tenMins * 10 + partial, VINE_COLORS[tenMins % VINE_COLORS.length])
+    }
+  }
+ 
+  function drawTimeLabel(h, m, s) {
+    ctx.font = `${SIZE * 0.026}px ui-monospace, monospace`
+    ctx.fillStyle = "rgba(255,255,255,0.18)"
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    const hh = String(h).padStart(2, "0")
+    const mm = String(m).padStart(2, "0")
+    const ss = String(s).padStart(2, "0")
+    ctx.fillText(hh + ":" + mm + ":" + ss, cx, cy + soilR + SIZE * 0.065)
+  }
+ 
+  function draw() {
+    const now     = new Date()
+    const hours   = now.getHours()
+    const minutes = now.getMinutes()
+    const seconds = now.getSeconds()
+ 
+    // New minute → increment leaf rotation batch counter
+    if (minutes !== lastMinute) {
+      if (lastMinute !== -1) leafMinuteCount++
+      lastMinute = minutes
+    }
+ 
+    // New hour → increment flower rotation batch counter
+    if (hours !== lastHour) {
+      if (lastHour !== -1) flowerHourCount++
+      lastHour = hours
+    }
+ 
+    // New second → add a leaf to the log
+    if (seconds !== lastSecond) {
+      lastSecond = seconds
+      const rotOffset = leafMinuteCount * ROTATION_STEP
+      const color = LEAF_COLORS[hours % LEAF_COLORS.length]
+      // index within this minute's batch (0–59)
+      const indexInBatch = seconds
+      leafLog.push({ indexInBatch, rotOffset, color })
+    }
+ 
+    // Flower log: one entry per completed minute, using current hour's rotation offset
+    // Rebuild flower log from scratch each frame based on minutes elapsed this hour
+    // (flowers reset each hour anyway since flowerHourCount drives the offset)
+    flowerLog.length = 0
+    const flowerRotOffset = flowerHourCount * ROTATION_STEP
+    const flowerColor = FLOWER_COLORS[hours % FLOWER_COLORS.length]
+    for (let m = 0; m < minutes; m++) {
+      flowerLog.push({ indexInBatch: m, rotOffset: flowerRotOffset, color: flowerColor })
+    }
+ 
+    // --- Render ---
+    ctx.clearRect(0, 0, SIZE, SIZE)
+    ctx.fillStyle = "#0d0d0d"
+    ctx.fillRect(0, 0, SIZE, SIZE)
+ 
+    drawPotRim()
+    drawSoil()
+ 
+    // All accumulated leaves
+    for (let i = 0; i < leafLog.length; i++) {
+      const leaf = leafLog[i]
+      const pos = soilPosition(leaf.indexInBatch, 60, leaf.rotOffset)
+      drawLeaf(pos, leaf.indexInBatch, leaf.color)
+    }
+ 
+    // Flowers for this hour
+    for (let i = 0; i < flowerLog.length; i++) {
+      const flower = flowerLog[i]
+      const pos = soilPosition(flower.indexInBatch, 60, flower.rotOffset)
+      drawFlower(pos, flower.indexInBatch, flower.color)
+    }
+ 
+    drawVines(minutes)
+    drawTimeLabel(hours, minutes, seconds)
+  }
+ 
+  draw()
+  setInterval(draw, 1000)
+</script>
+</body>
+</html>
