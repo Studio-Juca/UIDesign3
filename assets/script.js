@@ -13,7 +13,7 @@ const soilR   = SIZE * 0.40
 const vineR   = SIZE * 0.455
 
 const LEAF_COLORS   = ["#a8d87a","#6db33f","#3d8c2f","#1f5e1a","#0f3d0a"]
-const FLOWER_COLORS = ["#f76ca8","#b06fe8","#ff7043"]
+const FLOWER_COLORS = ["#ce407e","#9042d4","#43d9ff"]
 const VINE_COLORS   = ["#7ec850","#4aaa30","#2a6b18"]
 
 const ROTATION_STEP = Math.PI * (3 - Math.sqrt(5))
