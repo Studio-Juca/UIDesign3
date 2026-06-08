@@ -168,10 +168,9 @@ function drawVines(minutes) {
   }
 }
 
-/*
 function drawTimeLabel(h, m, s) {
   ctx.font         = `${SIZE * 0.026}px ui-monospace, monospace`
-  ctx.fillStyle    = "rgba(255,255,255,0.18)"
+  ctx.fillStyle    = "rgba(255,255,255,0)"    /*(_,_,_,opacity%)*/
   ctx.textAlign    = "center"
   ctx.textBaseline = "middle"
   ctx.fillText(
@@ -179,8 +178,6 @@ function drawTimeLabel(h, m, s) {
     cx, cy + soilR + SIZE * 0.065
   )
 }
-*/
-
 
 function buildRenderOrder(currentHour, currentSecond, currentMinute) {
   const byHour = {}
