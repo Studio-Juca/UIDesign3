@@ -158,16 +158,17 @@ function drawVineArc(fromMin, toMin, color) {
 
 function drawVines(minutes) {
   if (minutes === 0) return
-  const ten     = Math.floor(minutes / 10)
-  const partial = minutes % 10
-  for (let v = 0; v < ten; v++) {
-    drawVineArc(v * 10, (v + 1) * 10, VINE_COLORS[v % 3])
+  const fifteen = Math.floor(minutes / 15)
+  const partial = minutes % 15
+  for (let v = 0; v < fifteen; v++) {
+    drawVineArc(v * 15, (v + 1) * 15, VINE_COLORS[v % 3])
   }
   if (partial > 0) {
-    drawVineArc(ten * 10, ten * 10 + partial, VINE_COLORS[ten % 3])
+    drawVineArc(fifteen * 15, fifteen * 15 + partial, VINE_COLORS[fifteen % 3])
   }
 }
 
+/*
 function drawTimeLabel(h, m, s) {
   ctx.font         = `${SIZE * 0.026}px ui-monospace, monospace`
   ctx.fillStyle    = "rgba(255,255,255,0.18)"
@@ -178,6 +179,8 @@ function drawTimeLabel(h, m, s) {
     cx, cy + soilR + SIZE * 0.065
   )
 }
+*/
+
 
 function buildRenderOrder(currentHour, currentSecond, currentMinute) {
   const byHour = {}
