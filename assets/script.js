@@ -1,12 +1,14 @@
 const canvas = document.getElementById("clock")
 const ctx = canvas.getContext("2d")
 
-const SIZE = Math.min(window.innerWidth, window.innerHeight) * 0.92
-canvas.width = SIZE
-canvas.height = SIZE
+const WIDTH  = window.innerWidth  || 1080
+const HEIGHT = window.innerHeight || 1920
+canvas.width  = WIDTH
+canvas.height = HEIGHT
 
-const cx = SIZE / 2
-const cy = SIZE / 2
+const SIZE = Math.min(WIDTH, HEIGHT) * 0.92
+const cx = WIDTH  / 2
+const cy = HEIGHT / 2
 
 const potRim  = SIZE * 0.48
 const soilR   = SIZE * 0.40
@@ -15,6 +17,10 @@ const vineR   = SIZE * 0.455
 const LEAF_COLORS   = ["#a8d87a","#6db33f","#3d8c2f","#1f5e1a","#0f3d0a"]
 const FLOWER_COLORS = ["#ce407e","#9042d4","#43d9ff"]
 const VINE_COLORS   = ["#7ec850","#4aaa30","#2a6b18"]
+
+const BG_HEDGE_DARK  = ["#1a4d1a","#163d16","#1e521e","#143214","#183818"]
+const BG_HEDGE_MID   = ["#2d6e2a","#245224","#306030","#1f5220","#286028"]
+const BG_HEDGE_LIGHT = ["#3a8535","#35802e","#3d8c2f","#307530","#48a03a"]
 
 const ROTATION_STEP = Math.PI * (3 - Math.sqrt(5))
 const FADE_HOURS    = 9
@@ -36,6 +42,137 @@ let totalMinutesLogged = 0
 
 function vineAngle(m) {
   return -Math.PI / 2 + (m / 60) * Math.PI * 2
+}
+
+// ---- Garden background ----
+
+function drawBush(x, y, r, cDark, cLight) {
+  const n = 8
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2
+    ctx.beginPath()
+    ctx.arc(x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.48, r * 0.52, 0, Math.PI * 2)
+    ctx.fillStyle = i % 2 === 0 ? cDark : cLight
+    ctx.fill()
+  }
+  ctx.beginPath()
+  ctx.arc(x, y, r * 0.58, 0, Math.PI * 2)
+  ctx.fillStyle = cLight
+  ctx.fill()
+}
+
+function drawGrassBlade(x, y, h, color) {
+  const w = h * 0.22
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.bezierCurveTo(-w, -h * 0.32, -w * 0.7, -h * 0.78, 0, -h)
+  ctx.bezierCurveTo(w * 0.7, -h * 0.78, w, -h * 0.32, 0, 0)
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.restore()
+}
+
+function drawBgLeaf(x, y, size, angle, color) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(angle)
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.bezierCurveTo(-size * 0.35, -size * 0.3, -size * 0.3, -size * 0.85, 0, -size)
+  ctx.bezierCurveTo(size * 0.3, -size * 0.85, size * 0.35, -size * 0.3, 0, 0)
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.restore()
+}
+
+function drawGardenBackground() {
+  const bg = ctx.createLinearGradient(0, 0, 0, HEIGHT)
+  bg.addColorStop(0, "#142814")
+  bg.addColorStop(0.4, "#1c3e1c")
+  bg.addColorStop(0.75, "#183614")
+  bg.addColorStop(1, "#0d2009")
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, WIDTH, HEIGHT)
+
+  const gcols = BG_HEDGE_LIGHT.concat(BG_HEDGE_MID)
+
+  // === TOP SECTION ===
+
+  // Back hedge row — full width, close to top edge
+  for (let i = 0; i < 7; i++) {
+    const hx = WIDTH * (0.07 + i * 0.145)
+    drawBush(hx, HEIGHT * 0.030, SIZE * 0.072, BG_HEDGE_DARK[i % 5], BG_HEDGE_MID[i % 5])
+  }
+
+  // Leaf accent row — spread across full width
+  for (let i = 0; i < 9; i++) {
+    const lx  = WIDTH * (0.05 + i * 0.113)
+    const ang = i % 2 === 0 ? 0.28 : -0.28
+    drawBgLeaf(lx, HEIGHT * 0.095, SIZE * 0.058, ang, BG_HEDGE_LIGHT[i % 5])
+  }
+
+  // Second bush row — fewer, slightly lower
+  for (let i = 0; i < 5; i++) {
+    const hx = WIDTH * (0.10 + i * 0.20)
+    drawBush(hx, HEIGHT * 0.160, SIZE * 0.060, BG_HEDGE_MID[i % 5], BG_HEDGE_LIGHT[i % 5])
+  }
+
+  // Third leaf row — close to the pot top
+  for (let i = 0; i < 7; i++) {
+    const lx  = WIDTH * (0.06 + i * 0.145)
+    const ang = i % 2 === 0 ? -0.35 : 0.35
+    drawBgLeaf(lx, HEIGHT * 0.220, SIZE * 0.052, ang, BG_HEDGE_MID[i % 5])
+  }
+
+  // === SIDE STRIPS ===
+  // (thin visible strips where the pot circle doesn't reach at mid-height)
+  const sideYs = [0.30, 0.38, 0.46, 0.54, 0.62, 0.70]
+  sideYs.forEach((ry, i) => {
+    drawBgLeaf(WIDTH * 0.01, HEIGHT * ry, SIZE * 0.055,  0.20 * (i % 2 === 0 ? 1 : -1), BG_HEDGE_MID[i % 5])
+    drawBgLeaf(WIDTH * 0.99, HEIGHT * ry, SIZE * 0.055, -0.20 * (i % 2 === 0 ? 1 : -1), BG_HEDGE_MID[(i + 2) % 5])
+  })
+
+  // === BOTTOM SECTION ===
+
+  // Leaf row just below the pot
+  for (let i = 0; i < 7; i++) {
+    const lx  = WIDTH * (0.06 + i * 0.145)
+    const ang = i % 2 === 0 ? 0.32 : -0.32
+    drawBgLeaf(lx, HEIGHT * 0.780, SIZE * 0.052, ang, BG_HEDGE_LIGHT[(i + 3) % 5])
+  }
+
+  // Second bush row from bottom
+  for (let i = 0; i < 5; i++) {
+    const hx = WIDTH * (0.10 + i * 0.20)
+    drawBush(hx, HEIGHT * 0.840, SIZE * 0.060, BG_HEDGE_DARK[(i + 2) % 5], BG_HEDGE_MID[(i + 2) % 5])
+  }
+
+  // Second leaf row from bottom
+  for (let i = 0; i < 9; i++) {
+    const lx  = WIDTH * (0.05 + i * 0.113)
+    const ang = i % 2 === 0 ? -0.28 : 0.28
+    drawBgLeaf(lx, HEIGHT * 0.905, SIZE * 0.058, ang, BG_HEDGE_MID[(i + 1) % 5])
+  }
+
+  // Front hedge row near bottom
+  for (let i = 0; i < 7; i++) {
+    const hx = WIDTH * (0.07 + i * 0.145)
+    drawBush(hx, HEIGHT * 0.968, SIZE * 0.072, BG_HEDGE_DARK[(i + 3) % 5], BG_HEDGE_LIGHT[(i + 3) % 5])
+  }
+
+  // Grass blades along the very bottom
+  const grassXFracs = [0.01,0.04,0.08,0.12,0.16,0.20,0.25,0.30,0.35,0.40,
+                       0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.88,0.92,0.96,0.99]
+  const grassHs     = [0.040,0.046,0.037,0.043,0.038,0.044,0.040,0.036,0.043,0.041,
+                       0.046,0.038,0.043,0.037,0.041,0.044,0.039,0.043,0.037,0.041,0.038,0.045,0.040]
+  grassXFracs.forEach((rx, i) => {
+    drawGrassBlade(rx * WIDTH, HEIGHT, grassHs[i] * SIZE, gcols[i % gcols.length])
+    if (i % 3 !== 1) {
+      drawGrassBlade((rx + 0.009) * WIDTH, HEIGHT - SIZE * 0.003, grassHs[i] * 0.76 * SIZE, gcols[(i + 4) % gcols.length])
+    }
+  })
 }
 
 // ---- Draw primitives ----
@@ -252,9 +389,8 @@ function draw() {
 
   const renderOrder = buildRenderOrder(hours, seconds, minutes)
 
-  ctx.clearRect(0, 0, SIZE, SIZE)
-  ctx.fillStyle = "#0d0d0d"
-  ctx.fillRect(0, 0, SIZE, SIZE)
+  ctx.clearRect(0, 0, WIDTH, HEIGHT)
+  drawGardenBackground()
 
   drawPotRim()
   drawSoil()

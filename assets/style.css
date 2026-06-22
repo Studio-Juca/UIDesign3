@@ -11,13 +11,13 @@ html, body {
 }
 
 body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #0d0d0d;
+  background: #0d2009;
   font-family: ui-monospace, monospace;
 }
 
 canvas {
   display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
