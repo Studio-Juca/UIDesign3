@@ -411,3 +411,145 @@ function draw() {
 
 draw()
 setInterval(draw, 1000)
+
+// ---- Ladybug ----
+
+const bugCanvas     = document.getElementById("bug")
+const bugCtx        = bugCanvas.getContext("2d")
+bugCanvas.width     = WIDTH
+bugCanvas.height    = HEIGHT
+
+let bugStart = null
+let bugDir   = 1
+let bugY     = 0
+
+function drawLadybug(x, y, dir, phase) {
+  const c = bugCtx
+  const r = SIZE * 0.038
+
+  c.save()
+  c.translate(x, y)
+  if (dir < 0) c.scale(-1, 1)
+
+  // Legs — three pairs, tripod gait, drawn behind body
+  c.strokeStyle = "#160000"
+  c.lineWidth   = r * 0.12
+  c.lineCap     = "round"
+  const legXs = [r * 0.50, 0, -r * 0.50]
+  legXs.forEach((lx, i) => {
+    const sw = Math.sin(phase + i * Math.PI * 0.667) * r * 0.28
+    c.beginPath()
+    c.moveTo(lx, -r * 0.52)
+    c.quadraticCurveTo(lx - r * 0.10, -r * 0.68 + sw, lx + r * 0.07, -r * 0.95 + sw * 0.5)
+    c.stroke()
+    c.beginPath()
+    c.moveTo(lx, r * 0.52)
+    c.quadraticCurveTo(lx - r * 0.10, r * 0.68 - sw, lx + r * 0.07, r * 0.95 - sw * 0.5)
+    c.stroke()
+  })
+
+  // Body shadow
+  c.beginPath()
+  c.ellipse(r * 0.05, r * 0.07, r * 1.02, r * 0.78, 0, 0, Math.PI * 2)
+  c.fillStyle = "#6a0e04"
+  c.fill()
+
+  // Main red body
+  c.beginPath()
+  c.ellipse(0, 0, r, r * 0.75, 0, 0, Math.PI * 2)
+  c.fillStyle = "#cc1a08"
+  c.fill()
+
+  // Gloss highlight
+  const shine = c.createRadialGradient(-r * 0.30, -r * 0.28, 0, 0, -r * 0.10, r * 0.85)
+  shine.addColorStop(0, "rgba(255,210,190,0.38)")
+  shine.addColorStop(1, "rgba(200,50,30,0)")
+  c.beginPath()
+  c.ellipse(0, 0, r, r * 0.75, 0, 0, Math.PI * 2)
+  c.fillStyle = shine
+  c.fill()
+
+  // Wing divider
+  c.beginPath()
+  c.moveTo(0, -r * 0.73)
+  c.lineTo(0, r * 0.73)
+  c.strokeStyle = "#160000"
+  c.lineWidth   = r * 0.13
+  c.lineCap     = "round"
+  c.stroke()
+
+  // Spots
+  c.fillStyle = "#160000"
+  ;[[-r * 0.44, -r * 0.38], [ r * 0.44, -r * 0.44],
+    [-r * 0.50,  r * 0.08], [ r * 0.48,  r * 0.06],
+    [-r * 0.40,  r * 0.52], [ r * 0.42,  r * 0.50]
+  ].forEach(([sx, sy]) => {
+    c.beginPath()
+    c.arc(sx, sy, r * 0.175, 0, Math.PI * 2)
+    c.fill()
+  })
+
+  // Head
+  c.beginPath()
+  c.arc(r * 1.08, 0, r * 0.43, 0, Math.PI * 2)
+  c.fillStyle = "#160000"
+  c.fill()
+
+  // Eye
+  c.beginPath()
+  c.arc(r * 1.23, -r * 0.14, r * 0.10, 0, Math.PI * 2)
+  c.fillStyle = "rgba(255,255,255,0.75)"
+  c.fill()
+
+  // Antennae
+  c.strokeStyle = "#160000"
+  c.lineWidth   = r * 0.09
+  c.lineCap     = "round"
+  c.beginPath()
+  c.moveTo(r * 0.90, -r * 0.38)
+  c.bezierCurveTo(r * 1.10, -r * 0.65, r * 1.28, -r * 0.82, r * 1.14, -r * 1.08)
+  c.stroke()
+  c.beginPath()
+  c.arc(r * 1.13, -r * 1.13, r * 0.075, 0, Math.PI * 2)
+  c.fillStyle = "#160000"
+  c.fill()
+
+  c.beginPath()
+  c.moveTo(r * 1.05, -r * 0.28)
+  c.bezierCurveTo(r * 1.30, -r * 0.46, r * 1.50, -r * 0.58, r * 1.40, -r * 0.86)
+  c.stroke()
+  c.beginPath()
+  c.arc(r * 1.40, -r * 0.91, r * 0.075, 0, Math.PI * 2)
+  c.fillStyle = "#160000"
+  c.fill()
+
+  c.restore()
+}
+
+function animateLadybug() {
+  requestAnimationFrame(animateLadybug)
+  bugCtx.clearRect(0, 0, WIDTH, HEIGHT)
+  if (bugStart === null) return
+
+  const elapsed = performance.now() - bugStart
+  if (elapsed >= 30000) { bugStart = null; return }
+
+  const t     = elapsed / 30000
+  const r     = SIZE * 0.038
+  const xFrom = bugDir > 0 ? -r * 3 : WIDTH + r * 3
+  const xTo   = bugDir > 0 ? WIDTH + r * 3 : -r * 3
+  const bx    = xFrom + (xTo - xFrom) * t
+  const by    = bugY  + Math.sin(t * Math.PI * 6) * SIZE * 0.018
+
+  drawLadybug(bx, by, bugDir, elapsed * 0.003)
+}
+
+animateLadybug()
+
+setInterval(() => {
+  bugDir   = Math.random() < 0.5 ? 1 : -1
+  bugY     = Math.random() < 0.65
+    ? HEIGHT * (0.82 + Math.random() * 0.12)
+    : HEIGHT * (0.06 + Math.random() * 0.15)
+  bugStart = performance.now()
+}, 120000)
